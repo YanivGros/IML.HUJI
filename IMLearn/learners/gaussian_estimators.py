@@ -104,7 +104,7 @@ class UnivariateGaussian:
             log-likelihood calculated
         """
         # guas_func = lambda x: np.log(1 / (sigma * np.sqrt(2 * np.pi)) * np.exp(- (x - mu) ** 2 / (2 * sigma ** 2)))
-        const = -0.5 * len(X) * np.log(2 * np.pi * (sigma                                                                                                          ))
+        const = -0.5 * len(X) * np.log(2 * np.pi * (sigma))
         sigma_divide = -1 / (2 * (sigma))
         sum_of_loss = np.sum(np.power(X - mu, 2))
         return  const + sigma_divide * sum_of_loss
