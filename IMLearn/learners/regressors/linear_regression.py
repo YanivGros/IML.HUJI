@@ -49,7 +49,8 @@ class LinearRegression(BaseEstimator):
         -----
         Fits model with or without an intercept depending on value of `self.include_intercept_`
         """
-        raise NotImplementedError()
+
+        self.coefs_ = pinv(np.c_[np.ones(len(X)),X]) @ y if self.include_intercept_ else pinv(X) @ y
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
