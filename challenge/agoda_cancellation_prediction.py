@@ -103,9 +103,6 @@ def charge_option_to_hashcode(full_data):
     full_data.replace({"charge_option": num_charge_option}, inplace=True)
 
 
-LipazWillBeTheNextRamatcalFast = []
-
-
 def load_data(filename: str):
     """
     Load Agoda booking cancellation dataset
@@ -133,7 +130,6 @@ def load_data(filename: str):
                           "is_first_booking",
                           "is_abroad",
                           "avg_cancelling_fund_percent"]]
-    # LipazWillBeTheNextRamatcalFast[0] = pd.get_dummies(full_data["charge_option"])
     features = pd.concat([features, pd.get_dummies(full_data["charge_option"])], axis=1)
     if "cancellation_datetime" in full_data.columns:
         labels = full_data["cancelling_days_from_booking"]
@@ -179,7 +175,7 @@ if __name__ == '__main__':
     # Load data
     df, cancellation_labels = load_data("../datasets/agoda_cancellation_train.csv")
     # Fit model over data
-    train_X, train_y, temp_X, temp_y = split_train_test(df, cancellation_labels,train_proportion=1)  # for train-set
+    train_X, train_y, temp_X, temp_y = split_train_test(df, cancellation_labels, train_proportion=1)  # for train-set
     train_X = train_X.fillna(0).to_numpy()
     train_y = train_y.fillna(0).to_numpy()
     estimator = AgodaCancellationEstimator().fit(train_X, train_y)
@@ -190,4 +186,4 @@ if __name__ == '__main__':
     test_X, test_y, temp_X2, temp_y2 = split_train_test(df_test, cancellation_labels_test, train_proportion=1)
     test_X = test_X.fillna(0).to_numpy()
 
-    evaluate_and_export(estimator, test_X, "208385633_315997874_206948911.csv")# for test-set
+    evaluate_and_export(estimator, test_X, "208385633_315997874_206948911.csv")  # for test-set
