@@ -1,11 +1,10 @@
-from pandas import DataFrame
-from sklearn.base import BaseEstimator
-import agoda_cancellation_estimator
-from IMLearn.utils import split_train_test
-from agoda_cancellation_estimator import AgodaCancellationEstimator
-
 import numpy as np
 import pandas as pd
+from pandas import DataFrame
+from sklearn.base import BaseEstimator
+
+from IMLearn.utils import split_train_test
+from agoda_cancellation_estimator import AgodaCancellationEstimator
 
 
 def calc_canceling_fund(estimated_vacation_time,
@@ -27,7 +26,7 @@ def calc_canceling_fund(estimated_vacation_time,
             charge = int(option[option.find("D") + 1:option.find("P")])
             charge /= 100
             cost_sum += original_selling_amount * charge
-    return cost_sum / len(policy_options)
+    return ((cost_sum / len(policy_options)) / original_selling_amount) * 100
 
 
 def data_conversion(full_data: DataFrame):
@@ -69,9 +68,9 @@ def country_to_hashcode(full_data):
 
 def calculate_canceling_fund_present(full_data):
     temp = full_data[["cancellation_policy_code", "original_selling_amount", "estimated_stay_time"]]
-    res = temp.apply(lambda x: calc_canceling_fund(x.loc['estimated_stay_time'], x.loc['cancellation_policy_code'],
+    res = temp.apply(lambda x: calc_canceling_fund(x['estimated_stay_time'], x['cancellation_policy_code'],
                                                    x['original_selling_amount']), axis=1)
-    full_data["avg_cancelling_fund_percent"] = res * 10
+    full_data["avg_cancelling_fund_percent"] = res
 
 
 def calc_booking_checking(full_data):
@@ -83,7 +82,7 @@ def calc_booking_checking(full_data):
 def calc_checking_checkout(full_data):
     checking_date = pd.to_datetime(full_data["checkin_date"])
     checkout_date = pd.to_datetime(full_data["checkout_date"])
-    full_data["estimated_stay_time"] = (checking_date - checkout_date).dt.days
+    full_data["estimated_stay_time"] = (checkout_date - checking_date).dt.days
 
 
 def country_code(full_data: DataFrame):
@@ -102,6 +101,9 @@ def charge_option_to_hashcode(full_data):
     num_charge_option = {value: key for key, value in
                          enumerate(charge_option)}
     full_data.replace({"charge_option": num_charge_option}, inplace=True)
+
+
+LipazWillBeTheNextRamatcalFast = []
 
 
 def load_data(filename: str):
@@ -131,6 +133,7 @@ def load_data(filename: str):
                           "is_first_booking",
                           "is_abroad",
                           "avg_cancelling_fund_percent"]]
+    # LipazWillBeTheNextRamatcalFast[0] = pd.get_dummies(full_data["charge_option"])
     features = pd.concat([features, pd.get_dummies(full_data["charge_option"])], axis=1)
     if "cancellation_datetime" in full_data.columns:
         labels = full_data["cancelling_days_from_booking"]
@@ -159,17 +162,14 @@ def evaluate_and_export(estimator: BaseEstimator, X: np.ndarray, filename: str):
 
     """
     prediction = estimator.predict(X)
-    counter_estimated = 0
     res = []
     for i in range(len(X)):
         cancel_estimated = pd.to_datetime(X[i, 0]) + pd.to_timedelta(prediction[i], unit="days")
         if pd.to_datetime("2018-12-07") <= cancel_estimated <= pd.to_datetime("2018-12-13"):
             res.append(1)
-            counter_estimated += 1
         else:
             res.append(0)
     pd.DataFrame(res, columns=["predicted_values"]).to_csv(filename, index=False)
-    print(counter_estimated)
     return
 
 
@@ -179,23 +179,15 @@ if __name__ == '__main__':
     # Load data
     df, cancellation_labels = load_data("../datasets/agoda_cancellation_train.csv")
     # Fit model over data
-    # train_X, train_y, temp_X, temp_y = split_train_test(df, cancellation_labels, train_proportion=1) # for test-set
-    train_X, train_y, temp_X, temp_y = split_train_test(df, cancellation_labels) # for train-set
-
+    train_X, train_y, temp_X, temp_y = split_train_test(df, cancellation_labels,train_proportion=1)  # for train-set
     train_X = train_X.fillna(0).to_numpy()
     train_y = train_y.fillna(0).to_numpy()
-
-    temp_X = temp_X.fillna(0).to_numpy()  # for train set
-    temp_y = temp_y.fillna(0).to_numpy()  # for train set
     estimator = AgodaCancellationEstimator().fit(train_X, train_y)
 
     # Store model predictions over test set
-    # df_test, cancellation_labels_test = load_data("../challenge/test_set_week_2.csv")
-    # test_X, test_y, temp_X2, temp_y2 = split_train_test(df_test, cancellation_labels_test, train_proportion=1)
-    # test_X = df_test.fillna(0).to_numpy()
+    df_test, cancellation_labels_test = load_data("test_set_week_4.csv")
+    df_test = df_test.reindex(columns=df.columns, fill_value=0)
+    test_X, test_y, temp_X2, temp_y2 = split_train_test(df_test, cancellation_labels_test, train_proportion=1)
+    test_X = test_X.fillna(0).to_numpy()
 
-    # evaluate_and_export(estimator, temp_X, "id1_id2_id3.csv") # for train-set
-
-    # evaluate_and_export(estimator, test_X, "208385633_315997874_206948911.csv")# for test-set
-    print(estimator.loss(train_X, train_y))
-    print(estimator.loss(temp_X, temp_y))#for test only
+    evaluate_and_export(estimator, test_X, "208385633_315997874_206948911.csv")# for test-set
