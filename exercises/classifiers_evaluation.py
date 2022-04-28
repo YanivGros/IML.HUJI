@@ -97,7 +97,6 @@ def compare_gaussian_classifiers():
         guas = GaussianNaiveBayes()
         guas.fit(X, y)
         res = guas.likelihood(X)
-        LDA_classifier(X)
         np.array([0, 1])
         S_1 = [0, 1, 2, 3, 4, 5, 6, 7]
         S_2 = [0, 0, 1, 1, 1, 1, 2, 2]
@@ -111,7 +110,6 @@ def compare_gaussian_classifiers():
         temp = np.array(S[:, 0])
         Y_ = np.array(S[:, 1])
 
-        LDA_classifier.fit(S[:, 0], S[:, 1])
         LDA_classifier.fit(X, y)
         LDA_classifier.likelihood(X)
         LDA_classifier.loss(X, y)

@@ -121,7 +121,8 @@ class LDA(BaseEstimator):
         mahalanobis = np.einsum("bi,ij,bj->b", mu_X, self._cov_inv, mu_X)
         mahalanobis = mahalanobis.reshape(X.shape[0], self.mu_.shape[0])
         res = np.exp(-.5 * mahalanobis) / np.sqrt((2 * np.pi) ** X.shape[1] * det(self.cov_))
-        return res
+        pi_rep = np.tile(self.pi_.reshape(-1, 1), X.shape[0]).T
+        return res * pi_rep
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """

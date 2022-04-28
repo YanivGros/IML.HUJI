@@ -104,31 +104,7 @@ class GaussianNaiveBayes(BaseEstimator):
         """
         if not self.fitted_:
             raise ValueError("Estimator must first be fitted before calling `likelihood` function")
-        from scipy.stats import norm
-        # temp_1 =norm(self.mu_[0][0],self.vars_[0][0]).pdf(X[0][0])
-        # temp_2 = norm(self.mu_[0][1],self.vars_[0][1]).pdf(X[0][1])
-        # x_1_1 = temp_1 * temp_2
-        res_list = np.array([self.calc_likelihood(x) for x in X])
-        # a_k = ((X - self.mu_[i]) ** 2) / (2 * self.vars_[i])
-        # b_k = -np.log(np.sqrt(2 * np.pi * self.vars_[i]))
-        # c_k = np.log(self.pi_[i])
-        # res = (b_k - a_k).sum() + c_k
-
-        mu_rep = np.tile(self.mu_.T, X.shape[0]).T
-        X_rep = np.repeat(X, self.mu_.shape[0], axis=0)
-        var_rep = np.tile(self.vars_.T, X.shape[0]).T
-        pi_rep = np.tile(self.pi_.reshape(-1, 1), X.shape[0]).T
-
-        a_k = (X_rep - mu_rep) ** 2 / var_rep
-        b_k  = -np.log(np.sqrt(2 * np.pi * var_rep))
-        c_k  =np.log(pi_rep)
-        res = (b_k - a_k).sum() + c_k
-
-        pi_rep = np.tile(self.pi_.reshape(-1, 1), X.shape[0] ).T
-        var_rep = np.tile(self.vars_.T, X.shape[0]).T
-        mahalanobis = ((mu_rep - X_rep) / var_rep) ** 2
-        res = np.exp(-.5 * mahalanobis) / np.sqrt(2 * np.pi * var_rep)
-        return (res[:, 0] * res[:, 1]).reshape(X.shape[0], self.mu_.shape[0]) * pi_rep
+        return np.array([self.calc_likelihood(x) for x in X])
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
