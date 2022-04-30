@@ -93,37 +93,19 @@ def compare_gaussian_classifiers():
         X, y = load_dataset(f"../datasets/{f}")
 
         # Fit models and predict over training set
-        LDA_classifier = LDA()
-        guas = GaussianNaiveBayes()
-        guas.fit(X, y)
-        res = guas.likelihood(X)
-        np.array([0, 1])
-        S_1 = [0, 1, 2, 3, 4, 5, 6, 7]
-        S_2 = [0, 0, 1, 1, 1, 1, 2, 2]
-        guas.fit(np.array(S_1).reshape(-1, 1), np.array(S_2).reshape(-1, 1))
+        lda_clf = LDA()
+        gnb_clf = GaussianNaiveBayes()
+        lda_clf.fit(X, y)
 
-        S_1 = np.array(([1, 1], [1, 2], [2, 3], [2, 4], [3, 3], [3, 4]))
-        S_2 = np.array([0, 0, 1, 1, 1, 1])
-        S_ = [([1, 1], 0), ([1, 2], 0), ([2, 3], 1), ([2, 4], 1), ([3, 3], 1), ([3, 4], 1)]
-        S = np.array([([1, 1], 0), ([1, 2], 0), ([2, 3], 1), ([2, 4], 1), ([3, 3], 1), ([3, 4], 1)])
-        np.array(S)
-        temp = np.array(S[:, 0])
-        Y_ = np.array(S[:, 1])
-
-        LDA_classifier.fit(X, y)
-        LDA_classifier.likelihood(X)
-        LDA_classifier.loss(X, y)
-        guas.fit(X, y)
-        guas.predict(X)
-        guas.likelihood(X)
+        gnb_clf.fit(X, y)
 
         # Plot a figure with two suplots, showing the Gaussian Naive Bayes predictions on the left and LDA predictions
         # on the right. Plot title should specify dataset used and subplot titles should specify algorithm and accuracy
         # Create subplots
 
         from IMLearn.metrics import accuracy
-        y_pred_gaus = guas.predict(X)
-        y_pred_lda = LDA_classifier.predict(X)
+        y_pred_gaus = gnb_clf.predict(X)
+        y_pred_lda = lda_clf.predict(X)
         symbols = np.array(["circle", "diamond", "triangle-up"])
         fig = make_subplots(1, 2, subplot_titles=[f"GNB predicted class, Accuracy: {accuracy(y, y_pred_gaus)}",
                                                   f"LDA predicted class, Accuracy: {accuracy(y, y_pred_lda)}"])
@@ -138,43 +120,28 @@ def compare_gaussian_classifiers():
 
         # Add `X` dots specifying fitted Gaussians' means
 
-        fig.add_traces([go.Scatter(x=guas.mu_[:, 0], y=guas.mu_[:, 1], mode="markers",
+        fig.add_traces([go.Scatter(x=gnb_clf.mu_[:, 0], y=gnb_clf.mu_[:, 1], mode="markers",
                                    marker=dict(color="black", symbol="x",
                                                line=dict(color="black", width=1),
                                                size=10), showlegend=False)], rows=1, cols=1)
 
-        fig.add_traces([go.Scatter(x=LDA_classifier.mu_[:, 0], y=LDA_classifier.mu_[:, 1], mode="markers",
+        fig.add_traces([go.Scatter(x=lda_clf.mu_[:, 0], y=lda_clf.mu_[:, 1], mode="markers",
                                    marker=dict(color="black", symbol="x",
                                                line=dict(color="black", width=1),
                                                size=10), showlegend=False)], rows=1, cols=2)
 
         # Add ellipses depicting the covariances of the fitted Gaussians
 
-        for i in range(guas.mu_.shape[0]):
-            fig.add_traces(get_ellipse(guas.mu_[i], guas.vars_[i] * np.identity(2)), rows=1, cols=1)
-        for i in range(LDA_classifier.mu_.shape[0]):
-            fig.add_traces(get_ellipse(LDA_classifier.mu_[i], LDA_classifier.cov_), rows=1, cols=2)
+        for i in range(gnb_clf.mu_.shape[0]):
+            fig.add_traces(get_ellipse(gnb_clf.mu_[i], gnb_clf.vars_[i] * np.identity(2)), rows=1, cols=1)
+        for i in range(lda_clf.mu_.shape[0]):
+            fig.add_traces(get_ellipse(lda_clf.mu_[i], lda_clf.cov_), rows=1, cols=2)
         fig.update_layout(title=f"Comparing LDA and GNB, DataSet: {f}", margin=dict(t=100)).show()
-
-        # raise NotImplementedError()
-        #
-
-        # raise NotImplementedError()
-
-
-# todo clean code
-# todo make sure everthing work
 
 
 if __name__ == '__main__':
     np.random.seed(0)
-    # foo = np.ones((3, 4))
-    # foo = np.array([[1, 2, 3, 4], [2, 2, 2, 3], [5, 1, 7, 3], [2, 4, 9, 1]])
-    # foo_2 = np.zeros((3, 1))
-    # l = LDA()
-    # l.fit(X=foo, y=np.array([1, 1, 2, 2]))
-    # exit(0)
 
-    # run_perceptron()
+    run_perceptron()
 
     compare_gaussian_classifiers()

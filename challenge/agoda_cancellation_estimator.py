@@ -1,9 +1,17 @@
 from __future__ import annotations
 from typing import NoReturn
+
+import sklearn.ensemble
+
 from IMLearn.base import BaseEstimator
 import numpy as np
 from sklearn.neighbors import KDTree
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.ensemble import GradientBoostingClassifier
 from sklearn import tree
+
+
 
 
 class AgodaCancellationEstimator(BaseEstimator):
@@ -24,8 +32,9 @@ class AgodaCancellationEstimator(BaseEstimator):
 
         """
         super().__init__()
-        self.classifier = tree.DecisionTreeClassifier()
-
+        # self.classifier = tree.DecisionTreeClassifier()
+        self.classifier = RandomForestClassifier(warm_start=True)
+        # self.classifier = GradientBoostingClassifier()
     def _fit(self, X: np.ndarray, y: np.ndarray) -> NoReturn:
         """
         Fit an estimator for given samples

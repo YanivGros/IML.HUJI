@@ -41,9 +41,6 @@ class GaussianNaiveBayes(BaseEstimator):
         y : ndarray of shape (n_samples, )
             Responses of input data to fit to
         """
-        from sklearn.naive_bayes import GaussianNB
-        self.clf = GaussianNB()
-        self.clf.fit(X, y)
         n_features = X.shape[1]
         n_sample = X.shape[0]
         n_classes = np.unique(y).shape[0]
@@ -53,7 +50,7 @@ class GaussianNaiveBayes(BaseEstimator):
         for i, cls in enumerate(self.classes_):
             samples_in_class = X[y == cls]
             self.mu_[i] = samples_in_class.mean(axis=0)
-            self.vars_[i] = np.var(samples_in_class, ddof=1, axis=0)  # todo put ddof
+            self.vars_[i] = np.var(samples_in_class, ddof=1, axis=0)
         self.pi_ = np.unique(y, return_counts=True)[1] / n_sample
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
@@ -78,7 +75,7 @@ class GaussianNaiveBayes(BaseEstimator):
         return self.classes_[np.argmax(prob_list)]
 
     def calc_likelihood(self, X):
-        prob_list =[]
+        prob_list = []
         for i in range(len(self.classes_)):
             a_k = ((X - self.mu_[i]) ** 2) / (2 * self.vars_[i])
             b_k = -np.log(np.sqrt(2 * np.pi * self.vars_[i]))

@@ -50,9 +50,6 @@ class LDA(BaseEstimator):
         y : ndarray of shape (n_samples, )
             Responses of input data to fit to
         """
-        # self.lda_real = LinearDiscriminantAnalysis(store_covariance=True)
-        # self.lda_real.fit(X, y)
-
         n_features = X.shape[1]
         n_sample = X.shape[0]
         n_classes = np.unique(y).shape[0]
@@ -114,10 +111,6 @@ class LDA(BaseEstimator):
         mu_rep = np.tile(self.mu_.T, X.shape[0]).T
         X_rep = np.repeat(X, self.mu_.shape[0], axis=0)
         mu_X = mu_rep - X_rep
-
-        # from scipy.stats import multivariate_normal
-        # mul = multivariate_normal.pdf(X, mean=self.mu_[0], cov=self.cov_)
-        # temp = mu_X @ self._cov_inv @ mu_X.T
         mahalanobis = np.einsum("bi,ij,bj->b", mu_X, self._cov_inv, mu_X)
         mahalanobis = mahalanobis.reshape(X.shape[0], self.mu_.shape[0])
         res = np.exp(-.5 * mahalanobis) / np.sqrt((2 * np.pi) ** X.shape[1] * det(self.cov_))

@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from pandas import DataFrame
 from sklearn.base import BaseEstimator
+from sklearn.ensemble import AdaBoostClassifier
 
 from IMLearn.utils import split_train_test
 from agoda_cancellation_estimator import AgodaCancellationEstimator
@@ -9,7 +10,7 @@ from agoda_cancellation_estimator import AgodaCancellationEstimator
 
 def calc_canceling_fund(estimated_vacation_time,
                         cancelling_policy_code,
-                        original_selling_amount):
+                        original_selling_amount, normalize=True):
     policy_options = cancelling_policy_code.split("_")
     cost_sum = 0
     for option in policy_options:
@@ -26,7 +27,9 @@ def calc_canceling_fund(estimated_vacation_time,
             charge = int(option[option.find("D") + 1:option.find("P")])
             charge /= 100
             cost_sum += original_selling_amount * charge
-    return ((cost_sum / len(policy_options)) / original_selling_amount) * 100
+    if normalize:
+        return ((cost_sum / len(policy_options)) / original_selling_amount) * 100
+    return cost_sum / len(policy_options)
 
 
 def data_conversion(full_data: DataFrame):
@@ -38,6 +41,7 @@ def data_conversion(full_data: DataFrame):
     if "cancellation_datetime" in full_data:
         calc_booking_canceling(full_data)
     calculate_canceling_fund_present(full_data)
+    country_code(full_data)
 
 
 def payment_type_to_hashcode(full_data):
@@ -70,19 +74,23 @@ def calculate_canceling_fund_present(full_data):
     temp = full_data[["cancellation_policy_code", "original_selling_amount", "estimated_stay_time"]]
     res = temp.apply(lambda x: calc_canceling_fund(x['estimated_stay_time'], x['cancellation_policy_code'],
                                                    x['original_selling_amount']), axis=1)
+    res_ = temp.apply(lambda x: calc_canceling_fund(x['estimated_stay_time'], x['cancellation_policy_code'],
+                                                    x['original_selling_amount'], False), axis=1)
     full_data["avg_cancelling_fund_percent"] = res
+    full_data["total_cancelling_fund"] = res_
 
 
 def calc_booking_checking(full_data):
     checking_date = pd.to_datetime(full_data["checkin_date"])
     booking_date = pd.to_datetime(full_data["booking_datetime"])
-    full_data["time_from_booking_to_check_in"] = (checking_date - booking_date).dt.days
+    full_data["time_from_booking_to_check_in"] = (checking_date - booking_date).dt.days + 1
 
 
 def calc_checking_checkout(full_data):
     checking_date = pd.to_datetime(full_data["checkin_date"])
     checkout_date = pd.to_datetime(full_data["checkout_date"])
-    full_data["estimated_stay_time"] = (checkout_date - checking_date).dt.days
+    full_data["estimated_stay_time"] = (checkout_date - checking_date).dt.days + 1
+
 
 
 def country_code(full_data: DataFrame):
@@ -93,7 +101,7 @@ def country_code(full_data: DataFrame):
 def calc_booking_canceling(full_data):
     booking_date = pd.to_datetime(full_data["booking_datetime"])
     cancel_date = pd.to_datetime(full_data["cancellation_datetime"])
-    full_data["cancelling_days_from_booking"] = (cancel_date - booking_date).dt.days
+    full_data["cancelling_days_from_booking"] = (cancel_date - booking_date).dt.days + 1
 
 
 def charge_option_to_hashcode(full_data):
@@ -120,7 +128,7 @@ def load_data(filename: str):
     """
     full_data = pd.read_csv(filename).drop_duplicates()
     data_conversion(full_data)
-    country_code(full_data)
+
     features = full_data[["booking_datetime",
                           "time_from_booking_to_check_in",
                           "estimated_stay_time",
@@ -129,7 +137,15 @@ def load_data(filename: str):
                           "hotel_star_rating",
                           "is_first_booking",
                           "is_abroad",
-                          "avg_cancelling_fund_percent"]]
+                          "avg_cancelling_fund_percent",
+                          'is_user_logged_in',
+                          ]]
+    # features = full_data.drop(['h_booking_id', 'booking_datetime', 'checkin_date', 'checkout_date',
+    #                            'hotel_id', 'hotel_country_code', 'hotel_live_date', 'charge_option',
+    #                            'customer_nationality',
+    #                            'guest_nationality_country_name', 'language', 'original_payment_method',
+    #                            'original_payment_currency', 'cancellation_policy_code', 'cancellation_datetime'
+    #                               , 'cancelling_days_from_booking'], axis=1)
     features = pd.concat([features, pd.get_dummies(full_data["charge_option"])], axis=1)
     if "cancellation_datetime" in full_data.columns:
         labels = full_data["cancelling_days_from_booking"]
@@ -169,21 +185,41 @@ def evaluate_and_export(estimator: BaseEstimator, X: np.ndarray, filename: str):
     return
 
 
+def evaluate_different_estimator(train_X, train_y, test_X, test_y):
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.ensemble import IsolationForest
+    from sklearn.ensemble import RandomForestRegressor
+    all_clf = [RandomForestClassifier()]
+    for i in all_clf:
+        i.fit(train_X, train_y)
+        print(i.score(test_X, test_y))
+
+
 if __name__ == '__main__':
     np.random.seed(0)
 
     # Load data
     df, cancellation_labels = load_data("../datasets/agoda_cancellation_train.csv")
     # Fit model over data
-    train_X, train_y, temp_X, temp_y = split_train_test(df, cancellation_labels, train_proportion=1)  # for train-set
+    train_X, train_y, temp_X, temp_y = split_train_test(df, cancellation_labels)  # for train-set
     train_X = train_X.fillna(0).to_numpy()
     train_y = train_y.fillna(0).to_numpy()
+    temp_X = temp_X.fillna(0).to_numpy()
+    temp_y = temp_y.fillna(0).to_numpy()
+    # evaluate_different_estimator(train_X,train_y,temp_X,temp_y)
+    # exit()
     estimator = AgodaCancellationEstimator().fit(train_X, train_y)
+    print(estimator.loss(np.array(temp_X), np.array(temp_y)))
+    exit()
+    clf = AdaBoostClassifier(estimator)
+    clf = (estimator)
+    clf.fit(train_X, train_y)
+    print(clf.score(temp_X, temp_y))
 
     # Store model predictions over test set
     df_test, cancellation_labels_test = load_data("test_set_week_3.csv")
     df_test = df_test.reindex(columns=df.columns, fill_value=0)
     test_X, test_y, temp_X2, temp_y2 = split_train_test(df_test, cancellation_labels_test, train_proportion=1)
     test_X = test_X.fillna(0).to_numpy()
-
-    evaluate_and_export(estimator, test_X, "208385633_315997874_206948911.csv")  # for test-set
+    estimator.loss()
+    evaluate_and_export(estimator, test_X, "208385633_315997874_206948911_test_2.csv")  # for test-set
