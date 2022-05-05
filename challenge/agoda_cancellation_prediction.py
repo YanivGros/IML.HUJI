@@ -1,6 +1,11 @@
 import numpy as np
 import pandas as pd
 from pandas import DataFrame
+import matplotlib.pyplot as plt
+import plotly.express as px
+import seaborn as sns
+import missingno as msno
+from sklearn import preprocessing
 from sklearn.base import BaseEstimator
 from sklearn.ensemble import AdaBoostClassifier
 
@@ -32,12 +37,32 @@ def calc_canceling_fund(estimated_vacation_time,
     return cost_sum / len(policy_options)
 
 
+def add_hour_of_day(full_data: DataFrame):
+    full_data["hour"] = pd.to_datetime(full_data["booking_datetime"]).dt.hour
+
+
+def add_month_of_booking(full_data: DataFrame):
+    full_data["month_of_booking"] = pd.to_datetime(full_data["booking_datetime"]).dt.month
+
+
+def add_month_of_cheking(full_data):
+    full_data["month_of_checkin"] = pd.to_datetime(full_data["checkin_date"]).dt.month
+
+
 def data_conversion(full_data: DataFrame):
     country_to_hashcode(full_data)
+    add_hour_of_day(full_data)
+    add_month_of_booking(full_data)
+    add_month_of_cheking(full_data)
+    calc_checking_checkout(full_data)
+    calc_booking_checking(full_data)
+    enc = preprocessing.OrdinalEncoder()
+    # enc.fit(full_data.)
+
+    # full_data['month'].value_counts().plot.bar()
+    # plt.show()
     accommodation_to_hashcode(full_data)
     payment_type_to_hashcode(full_data)
-    calc_booking_checking(full_data)
-    calc_checking_checkout(full_data)
     if "cancellation_datetime" in full_data:
         calc_booking_canceling(full_data)
     calculate_canceling_fund_present(full_data)
@@ -63,6 +88,7 @@ def accommodation_to_hashcode(full_data):
 def country_to_hashcode(full_data):
     countries_code = set(full_data["origin_country_code"]).union(
         set(full_data["hotel_country_code"]))
+
     countries_code_dict = {k: v for v, k in enumerate(countries_code)}
     full_data.replace({"origin_country_code": countries_code_dict},
                       inplace=True)
@@ -92,7 +118,6 @@ def calc_checking_checkout(full_data):
     full_data["estimated_stay_time"] = (checkout_date - checking_date).dt.days + 1
 
 
-
 def country_code(full_data: DataFrame):
     full_data["is_abroad"] = full_data["hotel_country_code"] == full_data["origin_country_code"]
     full_data["is_abroad"].astype(int)
@@ -111,6 +136,22 @@ def charge_option_to_hashcode(full_data):
     full_data.replace({"charge_option": num_charge_option}, inplace=True)
 
 
+def preprocess_data(df: pd.DataFrame):
+    data_proc = []
+    if_cancel_label = (~data_proc['cancellation_datetime'].isna()).astype(int)
+    data_proc['is_canceled'] = if_cancel_label
+
+    correlation = data_proc.corr()['is_canceled'].abs().sort_values(ascending=False)
+    print(correlation)
+    data_conversion(data_proc)
+    features = pd.concat([data_proc, pd.get_dummies(full_data["charge_option"])], axis=1)
+    if "cancellation_datetime" in full_data.columns:
+        labels = full_data["cancelling_days_from_booking"]
+    else:
+        labels = []
+    return features, labels
+
+
 def load_data(filename: str):
     """
     Load Agoda booking cancellation dataset
@@ -126,32 +167,35 @@ def load_data(filename: str):
     2) Tuple of pandas.DataFrame and Series
     3) Tuple of ndarray of shape (n_samples, n_features) and ndarray of shape (n_samples,)
     """
-    full_data = pd.read_csv(filename).drop_duplicates()
-    data_conversion(full_data)
+    return pd.read_csv(filename)
 
-    features = full_data[["booking_datetime",
-                          "time_from_booking_to_check_in",
-                          "estimated_stay_time",
-                          "guest_is_not_the_customer",
-                          "original_payment_type",
-                          "hotel_star_rating",
-                          "is_first_booking",
-                          "is_abroad",
-                          "avg_cancelling_fund_percent",
-                          'is_user_logged_in',
-                          ]]
-    # features = full_data.drop(['h_booking_id', 'booking_datetime', 'checkin_date', 'checkout_date',
-    #                            'hotel_id', 'hotel_country_code', 'hotel_live_date', 'charge_option',
-    #                            'customer_nationality',
-    #                            'guest_nationality_country_name', 'language', 'original_payment_method',
-    #                            'original_payment_currency', 'cancellation_policy_code', 'cancellation_datetime'
-    #                               , 'cancelling_days_from_booking'], axis=1)
-    features = pd.concat([features, pd.get_dummies(full_data["charge_option"])], axis=1)
-    if "cancellation_datetime" in full_data.columns:
-        labels = full_data["cancelling_days_from_booking"]
-    else:
-        labels = []
-    return features, labels
+
+def evaluate_data(dt: pd.DataFrame):
+    msno.bar(dt)
+    plt.show()
+    msno.heatmap(dt)
+    plt.show()
+
+
+def drop_data(full_data: pd.DataFrame):
+    full_data = full_data.drop_duplicates(inplace=False)
+    # evaluate_data(full_data)
+    full_data.drop(['hotel_brand_code',
+                    'hotel_chain_code',
+                    'request_largebed',
+                    'request_earlycheckin',
+                    'request_airport',
+                    'request_highfloor',
+                    'request_latecheckin',
+                    'request_nonesmoke',
+                    'request_twinbeds'],
+                   axis=1,
+                   inplace=True)
+    # more than 40 present is missing (not including the canceling date which 73.91193167288907% nan)
+    # features = full_data.drop('cancellation_datetime', axis=1, inplace=False)
+    # full_data = full_data[~features.isna().any(1)].
+    full_data.dropna(subset=full_data.columns.drop("cancellation_datetime"), inplace=True)
+    return full_data
 
 
 def evaluate_and_export(estimator: BaseEstimator, X: np.ndarray, filename: str):
@@ -185,36 +229,28 @@ def evaluate_and_export(estimator: BaseEstimator, X: np.ndarray, filename: str):
     return
 
 
-def evaluate_different_estimator(train_X, train_y, test_X, test_y):
-    from sklearn.ensemble import RandomForestClassifier
-    from sklearn.ensemble import IsolationForest
-    from sklearn.ensemble import RandomForestRegressor
-    all_clf = [RandomForestClassifier()]
-    for i in all_clf:
-        i.fit(train_X, train_y)
-        print(i.score(test_X, test_y))
-
-
 if __name__ == '__main__':
     np.random.seed(0)
 
     # Load data
-    df, cancellation_labels = load_data("../datasets/agoda_cancellation_train.csv")
+    df = load_data("../datasets/agoda_cancellation_train.csv")
+    df = drop_data(df)
+
+    df = preprocess_data(df)
+
+    cancellation_labels = []
     # Fit model over data
+    df.head()
+
     train_X, train_y, temp_X, temp_y = split_train_test(df, cancellation_labels)  # for train-set
-    train_X = train_X.fillna(0).to_numpy()
-    train_y = train_y.fillna(0).to_numpy()
-    temp_X = temp_X.fillna(0).to_numpy()
-    temp_y = temp_y.fillna(0).to_numpy()
+    train_X = train_X.to_numpy()
+    train_y = train_y.to_numpy()
+    temp_X = temp_X.to_numpy()
+    temp_y = temp_y.to_numpy()
     # evaluate_different_estimator(train_X,train_y,temp_X,temp_y)
     # exit()
     estimator = AgodaCancellationEstimator().fit(train_X, train_y)
     print(estimator.loss(np.array(temp_X), np.array(temp_y)))
-    exit()
-    clf = AdaBoostClassifier(estimator)
-    clf = (estimator)
-    clf.fit(train_X, train_y)
-    print(clf.score(temp_X, temp_y))
 
     # Store model predictions over test set
     df_test, cancellation_labels_test = load_data("test_set_week_3.csv")
