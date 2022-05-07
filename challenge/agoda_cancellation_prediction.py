@@ -17,7 +17,9 @@ from agoda_cancellation_estimator import AgodaCancellationEstimator
 
 def calc_canceling_fund(estimated_vacation_time,
                         cancelling_policy_code,
-                        original_selling_amount, normalize=True):
+                        original_selling_amount,
+
+                        normalize=True):
     policy_options = cancelling_policy_code.split("_")
     cost_sum = 0
     for option in policy_options:
@@ -168,7 +170,7 @@ def load_data(filename: str):
     2) Tuple of pandas.DataFrame and Series
     3) Tuple of ndarray of shape (n_samples, n_features) and ndarray of shape (n_samples,)
     """
-    return pd.read_csv(filename, )
+    return pd.read_csv(filename )
 
 
 def evaluate_data(dt: pd.DataFrame):
@@ -240,6 +242,7 @@ if __name__ == '__main__':
     # Load data
     df = load_data("../datasets/agoda_cancellation_train.csv")
 
+
     df = drop_data(df)
 
     hot_enc = preprocessing.OneHotEncoder(sparse=False)
@@ -248,7 +251,7 @@ if __name__ == '__main__':
     list_to_hot_encode = ['accommadation_type_name', 'charge_option', 'original_payment_type',
                           'original_payment_method']
     list_to_label = ['customer_nationality', 'guest_nationality_country_name', 'language', 'original_payment_currency',
-                     'is_user_logged_in', 'is_first_booking']
+                     'is_user_logged_in', 'is_first_booking','hotel_country_code','origin_country_code']
 
     hot_enc.fit(df[list_to_hot_encode])
     label_enc.fit(df[list_to_label])
@@ -279,21 +282,23 @@ if __name__ == '__main__':
 
     df_cancel = df_test[cancelers.astype(bool)]
     predication = reg.predict(df_cancel)
-    df_cancel.loc["prediction"] = predication
+    df_cancel["prediction"] = predication
     df_test = df_test.merge(df_cancel, how='left', left_index=True, right_index=True)
     date_cancel = pd.to_datetime(full_test.checkin_date) - pd.to_timedelta(df_test.prediction, unit='D')
     res_1 = pd.to_datetime("2018-12-07") <= date_cancel
     res_2 = date_cancel <= pd.to_datetime("2018-12-13")
-    res_all = res_1 & res_2
-    full_test = pd.read_csv("test_set_week_3_labels.csv", sep='|')
+    res_all = res_1 and res_2
+    res_3 = pd.read_csv("test_set_week_3_labels.csv", sep='|')
 
-    acc = IMLearn.metrics.accuracy(res_all, full_test['label'])
+    from sklearn.metrics import f1_score
+    acc = f1_score(res_3.label,res_all.astype(int))
     print(acc)
+
 
     # Store model predictions over test set
 
     # full_test.checkin_date +
-    evaluate_and_export(estimator, test_X, "208385633_315997874_206948911_test_2.csv")  # for test-set
+    # evaluate_and_export(estimator, test_X, "208385633_315997874_206948911_test_2.csv")  # for test-set
 
     # for to_encode in list_to_hot_encode:
     #     hot_enc.fit(df[to_encode].values.reshape(-1, 1))
