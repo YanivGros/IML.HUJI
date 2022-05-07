@@ -18,8 +18,8 @@ from agoda_cancellation_estimator import AgodaCancellationEstimator
 def calc_canceling_fund(estimated_vacation_time,
                         cancelling_policy_code,
                         original_selling_amount,
-
                         normalize=True):
+
     policy_options = cancelling_policy_code.split("_")
     cost_sum = 0
     for option in policy_options:
@@ -130,11 +130,11 @@ def preprocess_data(full_data: pd.DataFrame,
     calc_booking_checking(full_data)
     calc_checking_checkout(full_data)
     country_code(full_data)
-    calculate_canceling_fund_present(full_data)
     if "cancellation_datetime" in full_data:
         add_if_cancel(full_data)
         calc_cancel_checking(full_data)
         full_data.drop('cancellation_datetime', axis=1, inplace=True)
+    calculate_canceling_fund_present(full_data)
 
     list_to_drop = ['h_booking_id',
                     'booking_datetime',
@@ -170,7 +170,7 @@ def load_data(filename: str):
     2) Tuple of pandas.DataFrame and Series
     3) Tuple of ndarray of shape (n_samples, n_features) and ndarray of shape (n_samples,)
     """
-    return pd.read_csv(filename )
+    return pd.read_csv(filename)
 
 
 def evaluate_data(dt: pd.DataFrame):
@@ -235,13 +235,20 @@ def evaluate_and_export(estimator: BaseEstimator, X: np.ndarray, filename: str):
     pd.DataFrame(res, columns=["predicted_values"]).to_csv(filename, index=False)
     return
 
+def add_test_data(week_n):
+    df = pd.DataFrame()
+    for i in range(1,week_n+1):
+        test_set = pd.read_csv(f"test_set_week_{i}.csv")
+        test_set_labels = pd.read_csv(f"test_set_week_{i}_labels.csv")
+        test_set["label"] = test_set_labels["h_booking_id|label"].str.split("|", expand=True)[1]
+        df = pd.concat([df,test_set])
+    return df
 
 if __name__ == '__main__':
     np.random.seed(0)
 
     # Load data
     df = load_data("../datasets/agoda_cancellation_train.csv")
-
 
     df = drop_data(df)
 
@@ -251,7 +258,7 @@ if __name__ == '__main__':
     list_to_hot_encode = ['accommadation_type_name', 'charge_option', 'original_payment_type',
                           'original_payment_method']
     list_to_label = ['customer_nationality', 'guest_nationality_country_name', 'language', 'original_payment_currency',
-                     'is_user_logged_in', 'is_first_booking','hotel_country_code','origin_country_code']
+                     'is_user_logged_in', 'is_first_booking', 'hotel_country_code', 'origin_country_code']
 
     hot_enc.fit(df[list_to_hot_encode])
     label_enc.fit(df[list_to_label])
@@ -269,11 +276,18 @@ if __name__ == '__main__':
     # df_cancel.drop('is_canceled', axis=1, inplace=True)
 
     from sklearn.ensemble import RandomForestClassifier
+    from sklearn.ensemble import AdaBoostClassifier
     from sklearn.ensemble import RandomForestRegressor
+    from sklearn import tree
+    from sklearn.neighbors import KNeighborsClassifier
+    from sklearn.neighbors import KNeighborsRegressor
+    from sklearn import ensemble
 
     clf = RandomForestClassifier(warm_start=True)
+
+    reg = KNeighborsRegressor()
+
     clf.fit(df, label_bool)
-    reg = RandomForestRegressor()
     reg.fit(df_cancel, label_time)
     full_test = load_data("test_set_week_3.csv")
     df_test = drop_data(full_test)
@@ -287,13 +301,13 @@ if __name__ == '__main__':
     date_cancel = pd.to_datetime(full_test.checkin_date) - pd.to_timedelta(df_test.prediction, unit='D')
     res_1 = pd.to_datetime("2018-12-07") <= date_cancel
     res_2 = date_cancel <= pd.to_datetime("2018-12-13")
-    res_all = res_1 and res_2
+    res_all = res_1 & res_2
     res_3 = pd.read_csv("test_set_week_3_labels.csv", sep='|')
 
     from sklearn.metrics import f1_score
-    acc = f1_score(res_3.label,res_all.astype(int))
-    print(acc)
 
+    acc = f1_score(res_3.label, res_all.astype(int))
+    print(acc)
 
     # Store model predictions over test set
 
