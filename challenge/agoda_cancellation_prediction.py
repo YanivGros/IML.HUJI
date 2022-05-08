@@ -1,18 +1,8 @@
 import numpy as np
 import pandas as pd
-import sklearn.ensemble
 from pandas import DataFrame
-import matplotlib.pyplot as plt
-import plotly.express as px
-import seaborn as sns
-import missingno as msno
 from sklearn import preprocessing
 from sklearn.base import BaseEstimator
-from sklearn.ensemble import AdaBoostClassifier
-
-import IMLearn.metrics
-from IMLearn.utils import split_train_test
-from agoda_cancellation_estimator import AgodaCancellationEstimator
 
 
 def calc_canceling_fund(estimated_vacation_time,
@@ -174,10 +164,6 @@ def load_data(filename: str):
 
 
 def evaluate_data(dt: pd.DataFrame):
-    # msno.bar(dt)
-    # plt.show()
-    # msno.heatmap(dt)
-    # plt.show()
     correlation = dt.corr()['is_canceled'].abs().sort_values(ascending=False)
     print(correlation)
 
@@ -235,15 +221,6 @@ def evaluate_and_export(estimator: BaseEstimator, X: np.ndarray, filename: str):
     pd.DataFrame(res, columns=["predicted_values"]).to_csv(filename, index=False)
     return
 
-def add_test_data(week_n):
-    df = pd.DataFrame()
-    for i in range(1,week_n+1):
-        test_set = pd.read_csv(f"test_set_week_{i}.csv")
-        test_set_labels = pd.read_csv(f"test_set_week_{i}_labels.csv")
-        test_set["label"] = test_set_labels["h_booking_id|label"].str.split("|", expand=True)[1]
-        df = pd.concat([df,test_set])
-    return df
-
 if __name__ == '__main__':
     np.random.seed(0)
 
@@ -271,25 +248,19 @@ if __name__ == '__main__':
     df.drop('cancelling_days_from_checkin', axis=1, inplace=True)
     df_cancel = df[label_bool.astype(bool)]
 
-    # label_time = df_cancel.cancelling_days_from_checkin
-    # df_cancel.drop('cancelling_days_from_checkin', axis=1, inplace=True)
-    # df_cancel.drop('is_canceled', axis=1, inplace=True)
-
     from sklearn.ensemble import RandomForestClassifier
-    from sklearn.ensemble import AdaBoostClassifier
-    from sklearn.ensemble import RandomForestRegressor
-    from sklearn import tree
-    from sklearn.neighbors import KNeighborsClassifier
     from sklearn.neighbors import KNeighborsRegressor
-    from sklearn import ensemble
-
+    from sklearn.ensemble import RandomForestRegressor
     clf = RandomForestClassifier(warm_start=True)
 
     reg = KNeighborsRegressor()
+    reg = RandomForestRegressor(warm_start=True)
 
     clf.fit(df, label_bool)
     reg.fit(df_cancel, label_time)
-    full_test = load_data("test_set_week_3.csv")
+    full_test = load_data("test_set_week_4_.csv")
+    true_test = pd.read_csv("test_set_week_4_labels.csv", sep='|')
+
     df_test = drop_data(full_test)
     df_test = preprocess_data(df_test, hot_enc, label_enc)
     cancelers = clf.predict(df_test)
@@ -302,27 +273,5 @@ if __name__ == '__main__':
     res_1 = pd.to_datetime("2018-12-07") <= date_cancel
     res_2 = date_cancel <= pd.to_datetime("2018-12-13")
     res_all = res_1 & res_2
-    res_3 = pd.read_csv("test_set_week_3_labels.csv", sep='|')
+    pd.DataFrame(res_all.astype(int), columns=["predicted_values"]).to_csv('208385633_315997874_206948911_test_5.csv', index=False)
 
-    from sklearn.metrics import f1_score
-
-    acc = f1_score(res_3.label, res_all.astype(int))
-    print(acc)
-
-    # Store model predictions over test set
-
-    # full_test.checkin_date +
-    # evaluate_and_export(estimator, test_X, "208385633_315997874_206948911_test_2.csv")  # for test-set
-
-    # for to_encode in list_to_hot_encode:
-    #     hot_enc.fit(df[to_encode].values.reshape(-1, 1))
-    #     X = hot_enc.fit_transform(df[to_encode].values.reshape(-1,1)).toarray()
-    #     dfOneHot = pd.DataFrame(X, columns=[to_encode+"_" + str(int(i)) for i in range(X.shape[1])])
-    #     df = pd.concat([df, dfOneHot], axis=1)
-
-    # full_data.drop(list_to_drop, axis=1, inplace=True)
-    # dfOneHot = DataFrame.sparse.from_spmatrix(hot_enc.transform(full_data[hot_enc.feature_names_in_]))
-    # full_data = pd.concat([full_data, dfOneHot], axis=1)
-    # full_data.drop(hot_enc.feature_names_in_, axis=1, inplace=True)
-    # label_enc.fit(full_data[list_to_label])
-    # full_data[list_to_label] = label_enc.transform(df[list_to_label])
