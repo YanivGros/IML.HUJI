@@ -250,16 +250,13 @@ if __name__ == '__main__':
 
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.neighbors import KNeighborsRegressor
-    from sklearn.ensemble import RandomForestRegressor
-    clf = RandomForestClassifier(warm_start=True)
 
+    clf = RandomForestClassifier(warm_start=True)
     reg = KNeighborsRegressor()
-    reg = RandomForestRegressor(warm_start=True)
 
     clf.fit(df, label_bool)
     reg.fit(df_cancel, label_time)
-    full_test = load_data("test_set_week_4_.csv")
-    true_test = pd.read_csv("test_set_week_4_labels.csv", sep='|')
+    full_test = load_data("test_set_week_5.csv")
 
     df_test = drop_data(full_test)
     df_test = preprocess_data(df_test, hot_enc, label_enc)
