@@ -49,22 +49,17 @@ class AdaBoost(BaseEstimator):
         y : ndarray of shape (n_samples, )
             Responses of input data to fit to
         """
-
-        from sklearn.ensemble import AdaBoostClassifier
-        self.real_clf = AdaBoostClassifier(algorithm="SAMME")
-        self.real_clf.fit(X, y)
-
         self.models_ = []
         self.weights_ = []
 
-        sum_ = np.sum(np.abs(y))
-        self.D_ = np.ones(y.shape[0]) / sum_
+        self.D_ = np.ones(y.shape[0]) / y.shape[0]
         for i in range(self.iterations_):
             base_clf = self.wl_()
             base_clf.fit(X, y * self.D_)
             self.models_.append(base_clf)
-            epsilon = base_clf.loss(X, y * self.D_)
-            w = 0.5 * np.log(1 / epsilon - 1)
+            prediction = base_clf.predict(X)
+            epsilon = np.sum(self.D_[prediction != y])
+            w = 0.5 * np.log((1 / epsilon) - 1)
             self.weights_.append(w)
             self.D_ = self.D_ * np.exp((-y) * w * base_clf.predict(X))
             self.D_ = self.D_ / np.sum(self.D_)
@@ -84,8 +79,7 @@ class AdaBoost(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        return self.partial_predict(X,self.iterations_)
-
+        return self.partial_predict(X, self.iterations_)
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
@@ -123,12 +117,10 @@ class AdaBoost(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-
         sum_ = np.zeros(X.shape[0])
         for i in range(T):
-            sum_ += self.models_[i].predict(X)
+            sum_ += self.weights_[i] * self.models_[i].predict(X)
         res = np.sign(sum_)
-        res[res == 0] = 1
         return res
 
     def partial_loss(self, X: np.ndarray, y: np.ndarray, T: int) -> float:

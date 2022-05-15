@@ -4,7 +4,6 @@ from IMLearn.metalearners.adaboost import AdaBoost
 from IMLearn.learners.classifiers import DecisionStump
 from utils import *
 import plotly.graph_objects as go
-import plotly.express as px
 
 from plotly.subplots import make_subplots
 
@@ -41,8 +40,10 @@ def generate_data(n: int, noise_ratio: float) -> Tuple[np.ndarray, np.ndarray]:
 
 
 def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=500):
-    (train_X, train_y), (test_X, test_y) = generate_data(train_size, noise), generate_data(test_size, 0)
+    (train_X, train_y), (test_X, test_y) = generate_data(train_size, noise), generate_data(test_size, noise)
+
     # Question 1: Train- and test errors of AdaBoost in noiseless case
+
     clf = AdaBoost(DecisionStump, n_learners)
     clf.fit(train_X, train_y)
     res_training = []
@@ -56,18 +57,15 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
         go.Scatter(x=range_, y=res_test, name="test error", showlegend=True,
                    marker=dict(color="blue", opacity=.7),
                    line=dict(color="blue", width=1)),
-        go.Scatter(x=range_, y=res_training, name="test error", showlegend=True,
+        go.Scatter(x=range_, y=res_training, name="training error", showlegend=True,
                    marker=dict(color="black", opacity=.7),
                    line=dict(color="black", width=1))],
         layout=go.Layout(
             title=r"$\text{training and test errors as function of the number of fitted leraners }$",
-            xaxis={"title": "x - Explanatory Variable"},
-            yaxis={"title": "y - Response"}))
+            xaxis={"title": "x - Ensemble size"},
+            yaxis={"title": "y - Error"}))
     fig.show()
-
-    clf.predict(train_X)
-
-    ada_loss = clf.loss(test_X, test_y)
+    fig.write_image(f"q1_{noise}.jpg")
 
     # Question 2: Plotting decision surfaces
     T = [5, 50, 100, 250]
@@ -84,11 +82,12 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
 
     fig.update_layout(title=rf"$\textbf{{Decision boundary with different ensemble size}}$", margin=dict(t=100)) \
         .update_xaxes(visible=False).update_yaxes(visible=False)
+    fig.write_image(f"q2_{noise}.jpg")
     fig.show()
-    print()
-    print()
-    print()
+
+
     # Question 3: Decision surface of best performing ensemble
+
     min_error_ind = np.argmin(res_test)
 
     fig = go.Figure(
@@ -98,29 +97,23 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
         [decision_surface(lambda x: clf.partial_predict(x, min_error_ind + 1), lims[0], lims[1], showscale=False),
          go.Scatter(x=test_X[:, 0], y=test_X[:, 1], mode="markers", showlegend=False,
                     marker=dict(color=test_y))])
+    fig.write_image(f"q3_{noise}.jpg")
     fig.show()
-    px.scatter(x=train_X[:, 0], y=train_X[:, 1], color=train_y,
-               color_continuous_scale=[custom[0], custom[-1]],
-               size=5 * clf.D_ / np.max(clf.D_),
-               title="Training set plot with a point size proportional to it’s weight").show()
-    # fig = go.Figure(
-    #     layout=go.Layout(
-    #         title=rf"$\textbf{{training set with a point size proportional to it’s weight}}$"))
-    # fig.add_traces([go.Scatter(x=train_X[:, 0],
-    #                            y=train_X[:, 1],
-    #                            marker=dict(color=test_y[test_y == 1],
-    #                                        colorscale=[custom[0], custom[-1]],
-    #                                        size=5 * clf.D_ / np.max(clf.D_)))])
-
     # Question 4: Decision surface with weighted samples
+
+    fig = go.Figure(
+        layout=go.Layout(
+            title=rf"$\textbf{{Training set plot with a point size proportional to it’s weight}}$"))
+    fig.add_traces(
+        [decision_surface(lambda x: clf.partial_predict(x, 250), lims[0], lims[1], showscale=False),
+         go.Scatter(x=train_X[:, 0], y=train_X[:, 1], mode="markers", showlegend=False,
+                    marker=dict(color=train_y, colorscale=[custom[0], custom[-1]], size=10 * clf.D_ / np.max(clf.D_)),
+                    line=dict(color="black", width=0.3))])
+    fig.write_image(f"q4_{noise}.jpg")
+    fig.show()
 
 
 if __name__ == '__main__':
     np.random.seed(0)
     fit_and_evaluate_adaboost(0)
-    fit_and_evaluate_adaboost(.4)
-    # f = np.arange(0, 20).reshape(2,10)
-    # l = np.ones(10)
-    # l[5:10] = -1
-    # clf = DecisionStump()
-    # clf.fit(f.T,l)
+    fit_and_evaluate_adaboost(0.4)
