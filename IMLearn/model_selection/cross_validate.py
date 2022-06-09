@@ -45,6 +45,6 @@ def cross_validate(estimator: BaseEstimator, X: np.ndarray, y: np.ndarray,
         part_train_X, part_train_y = np.delete(X,v), np.delete(y,v)
         validations_X, validations_y = X[v], y[v]
         model = estimator.fit(part_train_X, part_train_y)
-        train_loss_list.append(scoring(part_train_X, part_train_y))
-        valid_lost_list.append(scoring(validations_X, validations_y))
+        train_loss_list.append(scoring(part_train_y, model.predict(part_train_y)))
+        valid_lost_list.append(scoring(validations_y, model.predict(validations_X)))
     return np.mean(train_loss_list), np.mean(valid_lost_list)

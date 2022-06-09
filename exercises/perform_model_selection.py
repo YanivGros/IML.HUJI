@@ -7,6 +7,7 @@ from IMLearn.utils import split_train_test
 from IMLearn.model_selection import cross_validate
 from IMLearn.learners.regressors import PolynomialFitting, LinearRegression, RidgeRegression
 from sklearn.linear_model import Lasso
+import plotly.express as px
 
 from utils import *
 import plotly.graph_objects as go
@@ -44,32 +45,28 @@ def select_polynomial_degree(n_samples: int = 100, noise: float = 5):
 
     # Question 2 - Perform CV for polynomial fitting with degrees 0,1,...,10
 
-
-    num_fold = 5
-    max_polynomial_degree = 10
-    # validations = np.array_split(np.indices(pd.Series.to_numpy(train_X), 5))
-    validations = np.array_split(train_X.index.to_series(), num_fold)
-    print()
-
     # validations = [(train_X[v.ravel()], train_y[v.ravel()]) for v in validations]
 
     # Train and evaluate models for all values of k
     # train_errors, test_errors, val_errors = [], [], [[] for _ in range(len(validations))]
     avg_training_loss, avg_valid_lost = [], []
 
-    for degree in range(max_polynomial_degree + 1):
-        cur_model_loss_train = []
-        cur_model_loss_valid = []
-        for v in validations:
-            part_train_X, part_train_y = train_X[~v], train_y[~v]
-            validations_X, validations_y = train_X[v], train_y[v]
-            model = PolynomialFitting(degree).fit(part_train_X, part_train_y)
-            cur_model_loss_train.append(model.loss(part_train_X, part_train_y))
-            cur_model_loss_valid.append(model.loss(validations_X, validations_y))
-        avg_training_loss.append(np.average(cur_model_loss_train))
-        avg_valid_lost.append(np.average(cur_model_loss_valid))
-    best_parm = np.argmin(avg_valid_lost)
-    print()
+    for degree in range(11):
+        train_loss, valid_lost = cross_validate(PolynomialFitting(degree), train_X.to_numpy(), train_y.to_numpy(),
+                                                mean_square_error)
+        avg_training_loss.append(train_loss)
+        avg_valid_lost.append(valid_lost)
+
+    fig2 = go.Figure()
+    fig2.add_trace(go.Scatter(x=[i for i in range(11)], y=avg_training_loss, name="average training error"))
+    fig2.add_trace(go.Scatter(x=[i for i in range(11)], y=avg_valid_lost, name="average validation error"))
+    fig2.update_layout(title=f"Average training and validation score as a function of polynomial degree of model with "
+                             f"{n_samples} samples and {noise} noise",
+                       xaxis_title="degree")
+    fig2.show()
+
+    fig = px.bar(avg_training_loss, x=range(11), y=avg_training_loss)
+    fig.show()
 
     # Question 3 - Using best value of k, fit a k-degree polynomial model and report test error
     raise NotImplementedError()
