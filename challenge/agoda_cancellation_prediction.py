@@ -234,7 +234,7 @@ if __name__ == '__main__':
 
     list_to_hot_encode = ['accommadation_type_name', 'charge_option', 'original_payment_type',
                           'original_payment_method']
-    list_to_label = ['customer_nationality', 'guest_nationality_country_name', 'language', 'original_payment_currency',
+    list_to_label = ['customer_natio"nality', 'guest_nationality_country_name', 'language', 'original_payment_currency',
                      'is_user_logged_in', 'is_first_booking', 'hotel_country_code', 'origin_country_code']
 
     hot_enc.fit(df[list_to_hot_encode])

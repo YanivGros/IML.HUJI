@@ -27,10 +27,49 @@ def select_polynomial_degree(n_samples: int = 100, noise: float = 5):
     """
     # Question 1 - Generate dataset for model f(x)=(x+3)(x+2)(x+1)(x-1)(x-2) + eps for eps Gaussian noise
     # and split into training- and testing portions
-    raise NotImplementedError()
+    eps = np.random.normal(0, noise, size=n_samples)
+    x = np.random.uniform(-1.2, 2, size=n_samples)
+    true_f_of_x = (x + 3) * (x + 2) * (x + 1) * (x - 1) * (x - 2)
+    noise_f_of_x = true_f_of_x + eps
+    train_X, train_y, test_X, test_y = split_train_test(pd.Series(x), pd.Series(noise_f_of_x), 2.0 / 3.0)
+    # go.Figure([go.Scatter(name='Train Set', x=train_X, y=train_y, mode='markers',
+    #                       marker_color='blue'),
+    #            go.Scatter(name='Test Set', x=test_X, y=test_y, mode='markers',
+    #                       marker_color='red'),
+    #            go.Scatter(name='True Model', x=x, y=true_f_of_x, mode='markers',
+    #                       marker=dict(symbol="x"))]) \
+    #     .update_layout(title=r"$\text{(1) }\text{Scatter plot of training set, test set and true model}$",
+    #                    xaxis_title=r"$\text{x}$",
+    #                    yaxis_title=r"$\text{F(x)}$").show()
 
     # Question 2 - Perform CV for polynomial fitting with degrees 0,1,...,10
-    raise NotImplementedError()
+
+
+    num_fold = 5
+    max_polynomial_degree = 10
+    # validations = np.array_split(np.indices(pd.Series.to_numpy(train_X), 5))
+    validations = np.array_split(train_X.index.to_series(), num_fold)
+    print()
+
+    # validations = [(train_X[v.ravel()], train_y[v.ravel()]) for v in validations]
+
+    # Train and evaluate models for all values of k
+    # train_errors, test_errors, val_errors = [], [], [[] for _ in range(len(validations))]
+    avg_training_loss, avg_valid_lost = [], []
+
+    for degree in range(max_polynomial_degree + 1):
+        cur_model_loss_train = []
+        cur_model_loss_valid = []
+        for v in validations:
+            part_train_X, part_train_y = train_X[~v], train_y[~v]
+            validations_X, validations_y = train_X[v], train_y[v]
+            model = PolynomialFitting(degree).fit(part_train_X, part_train_y)
+            cur_model_loss_train.append(model.loss(part_train_X, part_train_y))
+            cur_model_loss_valid.append(model.loss(validations_X, validations_y))
+        avg_training_loss.append(np.average(cur_model_loss_train))
+        avg_valid_lost.append(np.average(cur_model_loss_valid))
+    best_parm = np.argmin(avg_valid_lost)
+    print()
 
     # Question 3 - Using best value of k, fit a k-degree polynomial model and report test error
     raise NotImplementedError()
@@ -61,4 +100,5 @@ def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 50
 
 if __name__ == '__main__':
     np.random.seed(0)
+    select_polynomial_degree()
     raise NotImplementedError()
