@@ -45,30 +45,31 @@ def select_polynomial_degree(n_samples: int = 100, noise: float = 5):
 
     # Question 2 - Perform CV for polynomial fitting with degrees 0,1,...,10
 
-    # validations = [(train_X[v.ravel()], train_y[v.ravel()]) for v in validations]
-
-    # Train and evaluate models for all values of k
-    # train_errors, test_errors, val_errors = [], [], [[] for _ in range(len(validations))]
     avg_training_loss, avg_valid_lost = [], []
 
-    for degree in range(11):
-        train_loss, valid_lost = cross_validate(PolynomialFitting(degree), train_X.to_numpy(), train_y.to_numpy(),
+    for degree in range(0,11):
+        train_loss, valid_lost = cross_validate(PolynomialFitting(degree),
+                                                train_X.to_numpy().flatten(),
+                                                train_y.to_numpy().flatten(),
                                                 mean_square_error)
         avg_training_loss.append(train_loss)
         avg_valid_lost.append(valid_lost)
 
-    fig2 = go.Figure()
-    fig2.add_trace(go.Scatter(x=[i for i in range(11)], y=avg_training_loss, name="average training error"))
-    fig2.add_trace(go.Scatter(x=[i for i in range(11)], y=avg_valid_lost, name="average validation error"))
-    fig2.update_layout(title=f"Average training and validation score as a function of polynomial degree of model with "
-                             f"{n_samples} samples and {noise} noise",
-                       xaxis_title="degree")
-    fig2.show()
-
-    fig = px.bar(avg_training_loss, x=range(11), y=avg_training_loss)
-    fig.show()
+    go.Figure([go.Scatter(name='Avg loss over training set', x=np.arange(0, 11), y=avg_training_loss,
+                          mode='markers +lines',
+                          marker_color='blue'),
+               go.Scatter(name='Avg loss over validation set', x=np.arange(0, 11), y=avg_valid_lost,
+                          mode='markers +lines',
+                          marker_color='red')]) \
+        .update_layout(title=r"$\text{Average loss of polynomial fitting estimator over training and validation set "
+                             r"as function of the degree of the polynomial}$",
+                       xaxis_title=r"$\text{Degree of polynomial}$",
+                       yaxis_title=r"$\text{MSE}$").show()
 
     # Question 3 - Using best value of k, fit a k-degree polynomial model and report test error
+    best_est = PolynomialFitting(np.argmin(avg_valid_lost))
+
+
     raise NotImplementedError()
 
 
