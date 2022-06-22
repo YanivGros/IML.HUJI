@@ -4,7 +4,6 @@ import numpy as np
 
 from IMLearn.base import BaseModule, BaseLR
 from .learning_rate import FixedLR
-
 OUTPUT_VECTOR_TYPE = ["last", "best", "average"]
 
 
@@ -39,6 +38,7 @@ class GradientDescent:
         Callable function receives as input any argument relevant for the current GD iteration. Arguments
         are specified in the `GradientDescent.fit` function
     """
+
     def __init__(self,
                  learning_rate: BaseLR = FixedLR(1e-3),
                  tol: float = 1e-5,
@@ -119,4 +119,24 @@ class GradientDescent:
                 Euclidean norm of w^(t)-w^(t-1)
 
         """
-        raise NotImplementedError()
+        f.compute_output()
+        prev_w = np.array(f.weights)
+        w_sum = prev_w
+        cur_best_w = 1
+        cur_best_w_loss = f.compute_output(X=X, y=y)
+        t = 0
+        for t in range(self.max_iter_):
+            cur_eta,  cur_f,cur_jacob = self.learning_rate_.lr_step(t=t), f.compute_output(), f.compute_jacobian(),
+            next_w = prev_w - cur_jacob * cur_eta
+            delta = np.sqrt(np.power(prev_w - next_w, 2).sum())
+            if delta < self.tol_:
+                break
+            self.callback_(solver=self, weights=f.weights, val=cur_f, grad=cur_jacob, t=t, eta=cur_eta, delta=delta)
+            w_sum += next_w
+            f.weights = next_w
+            if cur_best_w_loss < cur_f:
+                cur_best_w = next_w
+                cur_best_w_loss = cur_f
+            prev_w = next_w
+        ret_val = {"last": prev_w, "best": cur_best_w, "average": w_sum / (t + 1)}
+        return ret_val[self.out_type_]

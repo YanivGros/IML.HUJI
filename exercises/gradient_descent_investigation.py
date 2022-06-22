@@ -46,12 +46,14 @@ def plot_descent_path(module: Type[BaseModule],
     fig = plot_descent_path(IMLearn.desent_methods.modules.L1, np.ndarray([[1,1],[0,0]]))
     fig.show()
     """
+
     def predict_(w):
         return np.array([module(weights=wi).compute_output() for wi in w])
 
     from utils import decision_surface
     return go.Figure([decision_surface(predict_, xrange=xrange, yrange=yrange, density=70, showscale=False),
-                      go.Scatter(x=descent_path[:, 0], y=descent_path[:, 1], mode="markers+lines", marker_color="black")],
+                      go.Scatter(x=descent_path[:, 0], y=descent_path[:, 1], mode="markers+lines",
+                                 marker_color="black")],
                      layout=go.Layout(xaxis=dict(range=xrange),
                                       yaxis=dict(range=yrange),
                                       title=f"GD Descent Path {title}"))
@@ -73,19 +75,60 @@ def get_gd_state_recorder_callback() -> Tuple[Callable[[], None], List[np.ndarra
     weights: List[np.ndarray]
         Recorded parameters
     """
-    raise NotImplementedError()
+    values = []
+    weights_list = []
+
+    def callback(solver, weights, val, grad, t, eta, delta):
+        values.append(np.array(val))
+        weights_list.append(np.array(weights))
+
+    return callback, values, weights_list
 
 
 def compare_fixed_learning_rates(init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
                                  etas: Tuple[float] = (1, .1, .01, .001)):
-    raise NotImplementedError()
+    for eta in etas:
+        call_, values_, weights_ = get_gd_state_recorder_callback()
+        GradientDescent(FixedLR(eta), callback=call_).fit(L1(init), None, None)
+        plot_descent_path(L1, np.array(weights_),f"decent path of lerning rate {eta} with over L1").show()
+        go.Figure([go.Scatter(x=np.arange(0, len(values_)), y=values_,
+                              mode='markers +lines')]) \
+            .update_layout(title=f"norm as function of GD iteration using Learning rate: {eta} and over L1",
+                           xaxis_title="",
+                           yaxis_title=r"$\text{MSE}$").show()
+        call_, values_, weights_ = get_gd_state_recorder_callback()
+
+        GradientDescent(FixedLR(eta), callback=call_).fit(L2(init), None, None)
+        # plot_descent_path(L2, np.array(weights_)).show()
+        go.Figure([go.Scatter(x=np.arange(0, len(values_)), y=values_,
+                              mode='markers +lines')]) \
+            .update_layout(title=f"eta is: {eta} L2",
+                           xaxis_title=r"$\text{Degree of polynomial}$",
+                           yaxis_title=r"$\text{MSE}$").show()
 
 
 def compare_exponential_decay_rates(init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
                                     eta: float = .1,
                                     gammas: Tuple[float] = (.9, .95, .99, 1)):
     # Optimize the L1 objective using different decay-rate values of the exponentially decaying learning rate
-    raise NotImplementedError()
+    for gama in gammas:
+        call_, values_, weights_ = get_gd_state_recorder_callback()
+        GradientDescent(ExponentialLR(eta, gama), callback=call_).fit(L1(init), None, None)
+        # plot_descent_path(L1, np.array(weights_)).show()
+        go.Figure([go.Scatter(x=np.arange(0, len(values_)), y=values_,
+                              mode='markers')]) \
+            .update_layout(title=f"eta is: {eta} L1",
+                           xaxis_title=r"$\text{Degree of polynomial}$",
+                           yaxis_title=r"$\text{MSE}$").show()
+        call_, values_, weights_ = get_gd_state_recorder_callback()
+
+        GradientDescent(FixedLR(eta), callback=call_).fit(L2(init), None, None)
+        # plot_descent_path(L2, np.array(weights_)).show()
+        go.Figure([go.Scatter(x=np.arange(0, len(values_)), y=values_,
+                              mode='markers')]) \
+            .update_layout(title=f"eta is: {eta} L2",
+                           xaxis_title=r"$\text{Degree of polynomial}$",
+                           yaxis_title=r"$\text{MSE}$").show()
 
     # Plot algorithm's convergence for the different values of gamma
     raise NotImplementedError()

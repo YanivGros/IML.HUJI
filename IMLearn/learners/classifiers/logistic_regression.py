@@ -88,7 +88,14 @@ class LogisticRegression(BaseEstimator):
         Fits model using specified `self.optimizer_` passed when instantiating class and includes an intercept
         if specified by `self.include_intercept_
         """
-        raise NotImplementedError()
+        if self.include_intercept_:
+            X = np.c_[np.ones(X.shape[0]), X]
+        weights = np.random.multivariate_normal(0, 1, X.shape[1]) / X.shape[0]
+        weights_for_regular = np.r_[1, weights] if self.include_intercept_ else weights
+        penalty_dict = {"none": , "l1", "l2"}
+        reg_log = RegularizedModule(LogisticModule(), L1(), self.lam_, weights,self.include_intercept_)
+        # reg_log = RegularizedModule(LogisticModule(weights_for_regular), L1(weights), self.lam_, weights,self.include_intercept_)
+        self.coefs_ = self.solver_.fit(reg_log, X, y)
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -104,7 +111,6 @@ class LogisticRegression(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        raise NotImplementedError()
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
         """
