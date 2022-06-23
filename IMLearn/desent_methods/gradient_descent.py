@@ -119,7 +119,6 @@ class GradientDescent:
                 Euclidean norm of w^(t)-w^(t-1)
 
         """
-        f.compute_output()
         prev_w = np.array(f.weights)
         w_sum = prev_w
         cur_best_w = 1

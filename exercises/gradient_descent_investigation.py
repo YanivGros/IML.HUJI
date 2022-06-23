@@ -90,7 +90,7 @@ def compare_fixed_learning_rates(init: np.ndarray = np.array([np.sqrt(2), np.e /
     for eta in etas:
         call_, values_, weights_ = get_gd_state_recorder_callback()
         GradientDescent(FixedLR(eta), callback=call_).fit(L1(init), None, None)
-        plot_descent_path(L1, np.array(weights_),f"decent path of lerning rate {eta} with over L1").show()
+        plot_descent_path(L1, np.array(weights_), f"decent path of lerning rate {eta} with over L1").show()
         go.Figure([go.Scatter(x=np.arange(0, len(values_)), y=values_,
                               mode='markers +lines')]) \
             .update_layout(title=f"norm as function of GD iteration using Learning rate: {eta} and over L1",
@@ -174,7 +174,20 @@ def fit_logistic_regression():
     X_train, y_train, X_test, y_test = load_data()
 
     # Plotting convergence rate of logistic regression over SA heart disease data
-    raise NotImplementedError()
+    logistic_reg = LogisticRegression().fit(X=X_train, y=y_train)
+    print()
+    from sklearn.metrics import roc_curve, auc
+    # fpr, tpr, thresholds = roc_curve(y, y_prob)
+
+    # go.Figure(
+    #     data=[go.Scatter(x=[0, 1], y=[0, 1], mode="lines", line=dict(color="black", dash='dash'),
+    #                      name="Random Class Assignment"),
+    #           go.Scatter(x=fpr, y=tpr, mode='markers+lines', text=thresholds, name="", showlegend=False, marker_size=5,
+    #                      marker_color=c[1][1],
+    #                      hovertemplate="<b>Threshold:</b>%{text:.3f}<br>FPR: %{x:.3f}<br>TPR: %{y:.3f}")],
+    #     layout=go.Layout(title=rf"$\text{{ROC Curve Of Fitted Model - AUC}}={auc(fpr, tpr):.6f}$",
+    #                      xaxis=dict(title=r"$\text{False Positive Rate (FPR)}$"),
+    #                      yaxis=dict(title=r"$\text{True Positive Rate (TPR)}$")))
 
     # Fitting l1- and l2-regularized logistic regression models, using cross-validation to specify values
     # of regularization parameter
@@ -183,6 +196,6 @@ def fit_logistic_regression():
 
 if __name__ == '__main__':
     np.random.seed(0)
-    compare_fixed_learning_rates()
-    compare_exponential_decay_rates()
+    # compare_fixed_learning_rates()
+    # compare_exponential_decay_rates()
     fit_logistic_regression()
