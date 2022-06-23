@@ -6,6 +6,7 @@ from IMLearn import BaseModule
 from IMLearn.desent_methods import GradientDescent, FixedLR, ExponentialLR
 from IMLearn.desent_methods.modules import L1, L2
 from IMLearn.learners.classifiers.logistic_regression import LogisticRegression
+from IMLearn.model_selection import cross_validate
 from IMLearn.utils import split_train_test
 from utils import *
 import plotly.graph_objects as go
@@ -87,54 +88,56 @@ def get_gd_state_recorder_callback() -> Tuple[Callable[[], None], List[np.ndarra
 
 def compare_fixed_learning_rates(init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
                                  etas: Tuple[float] = (1, .1, .01, .001)):
+    figl1 = go.Figure()
+    figl2 = go.Figure()
+    min_val_list_l1 = []
+    min_val_list_l2 = []
     for eta in etas:
         call_, values_, weights_ = get_gd_state_recorder_callback()
         GradientDescent(FixedLR(eta), callback=call_).fit(L1(init), None, None)
-        plot_descent_path(L1, np.array(weights_), f"decent path of lerning rate {eta} with over L1").show()
-        go.Figure([go.Scatter(x=np.arange(0, len(values_)), y=values_,
-                              mode='markers +lines')]) \
-            .update_layout(title=f"norm as function of GD iteration using Learning rate: {eta} and over L1",
-                           xaxis_title="",
-                           yaxis_title=r"$\text{MSE}$").show()
+        plot_descent_path(L1, np.array(weights_), f"of L1 with fixed learning rate: {eta}").show()
+        figl1.add_trace(go.Scatter(x=np.arange(0, len(values_)), y=values_, mode='markers', name=f"Eta ={eta}"))
+        min_val_list_l1.append(min(values_))
+    for eta in etas:
         call_, values_, weights_ = get_gd_state_recorder_callback()
-
         GradientDescent(FixedLR(eta), callback=call_).fit(L2(init), None, None)
-        # plot_descent_path(L2, np.array(weights_)).show()
-        go.Figure([go.Scatter(x=np.arange(0, len(values_)), y=values_,
-                              mode='markers +lines')]) \
-            .update_layout(title=f"eta is: {eta} L2",
-                           xaxis_title=r"$\text{Degree of polynomial}$",
-                           yaxis_title=r"$\text{MSE}$").show()
+        plot_descent_path(L2, np.array(weights_), f"of L2 with fixed learning rate: {eta}").show()
+        figl2.add_trace(go.Scatter(x=np.arange(0, len(values_)), y=values_, mode='markers', name=f"Eta = {eta}"))
+        min_val_list_l2.append(min(values_))
+
+    figl1.update_layout(
+        title="Norm as a function of the GD iteration of L1 objective function with fixed learning rate",
+        xaxis_title=r"$\text{Iteration}$",
+        yaxis_title=r"$\text{Norm   }$").show()
+    figl2.update_layout(
+        title="Norm as a function of GD iteration of L2 objective function with fixed learning rate",
+        xaxis_title=r"$\text{Iteration}$",
+        yaxis_title=r"$\text{Norm}$").show()
+    print(f"min_value of l1 is {min(min_val_list_l1)}")
+    print(f"min_value of l2 is {min(min_val_list_l2)}")
 
 
 def compare_exponential_decay_rates(init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
                                     eta: float = .1,
                                     gammas: Tuple[float] = (.9, .95, .99, 1)):
     # Optimize the L1 objective using different decay-rate values of the exponentially decaying learning rate
+
+    fig = go.Figure()
+    min_val_list = []
     for gama in gammas:
         call_, values_, weights_ = get_gd_state_recorder_callback()
         GradientDescent(ExponentialLR(eta, gama), callback=call_).fit(L1(init), None, None)
-        # plot_descent_path(L1, np.array(weights_)).show()
-        go.Figure([go.Scatter(x=np.arange(0, len(values_)), y=values_,
-                              mode='markers')]) \
-            .update_layout(title=f"eta is: {eta} L1",
-                           xaxis_title=r"$\text{Degree of polynomial}$",
-                           yaxis_title=r"$\text{MSE}$").show()
-        call_, values_, weights_ = get_gd_state_recorder_callback()
-
-        GradientDescent(FixedLR(eta), callback=call_).fit(L2(init), None, None)
-        # plot_descent_path(L2, np.array(weights_)).show()
-        go.Figure([go.Scatter(x=np.arange(0, len(values_)), y=values_,
-                              mode='markers')]) \
-            .update_layout(title=f"eta is: {eta} L2",
-                           xaxis_title=r"$\text{Degree of polynomial}$",
-                           yaxis_title=r"$\text{MSE}$").show()
-
-    # Plot algorithm's convergence for the different values of gamma
-    raise NotImplementedError()
-
-    # Plot descent path for gamma=0.95
-    raise NotImplementedError()
+        # Plot algorithm's convergence for the different values of gamma
+        fig.add_trace(go.Scatter(x=np.arange(0, len(values_)), y=values_, mode='markers', name=f"gamma = {gama}"))
+        min_val_list.append(min(values_))
+        # Plot descent path for gamma=0.95
+        if gama == .95:
+            plot_descent_path(L1, np.array(weights_), f"of L1 with exponentially decaying learning rate: {gama}").show()
+    fig.update_layout(
+        title="Norm as a function of GD iteration of L1 objective function with exponentially decaying learning rate",
+        xaxis_title=r"$\text{Iteration}$",
+        yaxis_title=r"$\text{Norm}$").show()
+    print(f"min_val of exponential decay rates is {min(min_val_list)} ")
 
 
 def load_data(path: str = "../datasets/SAheart.data", train_portion: float = .8) -> \
@@ -172,7 +175,7 @@ def load_data(path: str = "../datasets/SAheart.data", train_portion: float = .8)
 def fit_logistic_regression():
     # Load and split SA Heard Disease dataset
     X_train, y_train, X_test, y_test = load_data()
-
+    X_train, y_train, X_test, y_test = X_train.to_numpy(), y_train.to_numpy(), X_test.to_numpy(), y_test.to_numpy(),
     # Plotting convergence rate of logistic regression over SA heart disease data
     logistic_reg = LogisticRegression().fit(X=X_train, y=y_train)
     c = [custom[0], custom[-1]]
@@ -188,15 +191,43 @@ def fit_logistic_regression():
         layout=go.Layout(title=rf"$\text{{ROC Curve Of Fitted Model - AUC}}={auc(fpr, tpr):.6f}$",
                          xaxis=dict(title=r"$\text{False Positive Rate (FPR)}$"),
                          yaxis=dict(title=r"$\text{True Positive Rate (TPR)}$"))).show()
-
+    best_alpha = thresholds[np.argmax(tpr - fpr)]
+    print(f"best alpha is {best_alpha}")
+    logistic_reg.alpha_ = best_alpha
+    print(f"model test error is {logistic_reg.loss(X_test, y_test)}")
 
     # Fitting l1- and l2-regularized logistic regression models, using cross-validation to specify values
     # of regularization parameter
-    raise NotImplementedError()
+
+    from IMLearn.metrics.loss_functions import misclassification_error
+    lam_list = (0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1)
+    score_list_l1 = []
+    score_list_l2 = []
+    for lam in lam_list:
+        l1_rgz_lgt_reg = LogisticRegression(penalty="l1", lam=lam)
+        score_list_l1.append(cross_validate(l1_rgz_lgt_reg, X_train, y_train, misclassification_error)[1])
+    best_lam = lam_list[int(np.argmin(score_list_l1))]
+    best_l1_lgt_reg = LogisticRegression(penalty="l1", lam=best_lam)
+    best_l1_lgt_reg.fit(X_train, y_train)
+    print(f"l1 regularization, Best lamda is {best_lam} and it's test error is {best_l1_lgt_reg.loss(X_test, y_test)}")
+    for lam in lam_list:
+        l2_rgz_lgt_reg = LogisticRegression(penalty="l2", lam=lam)
+        score_list_l2.append(cross_validate(l2_rgz_lgt_reg, X_train, y_train, misclassification_error)[1])
+    best_lam = lam_list[int(np.argmin(score_list_l2))]
+    best_l2_lgt_reg = LogisticRegression(penalty="l2", lam=best_lam)
+    best_l2_lgt_reg.fit(X_train, y_train)
+    print(f"l2 regularization, Best lamda is {best_lam} and it's test error is {best_l2_lgt_reg.loss(X_test, y_test)}")
 
 
 if __name__ == '__main__':
     np.random.seed(0)
-    # compare_fixed_learning_rates()
-    # compare_exponential_decay_rates()
+    compare_fixed_learning_rates()
+    compare_exponential_decay_rates()
     fit_logistic_regression()
+# best alpha is 0.32477367537820134
+# model test error is 0.33695652173913043
+# l1 regularization, Best lamda is 0.001 and it's test error is 0.31521739130434784
+# l1 regularization, Best lamda is 0.001 and it's test error is 0.6847826086956522
+# l1 regularization, Best lamda is 0.1 and it's test error is 0.31521739130434784
+# l2 regularization, Best lamda is 0.001 and it's test error is 0.31521739130434784
+

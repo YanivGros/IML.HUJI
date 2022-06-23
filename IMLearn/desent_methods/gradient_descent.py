@@ -128,13 +128,13 @@ class GradientDescent:
         for t in range(self.max_iter_):
             cur_eta = self.learning_rate_.lr_step(t=t)
             cur_f = f.compute_output(X=X, y=y)
-
             cur_jacob = f.compute_jacobian(X=X, y=y)
             next_w = prev_w - cur_jacob * cur_eta
             delta = np.sqrt(np.power(prev_w - next_w, 2).sum())
+            self.callback_(solver=self, weights=f.weights, val=cur_f, grad=cur_jacob, t=t, eta=cur_eta, delta=delta)
             if delta < self.tol_:
                 break
-            self.callback_(solver=self, weights=f.weights, val=cur_f, grad=cur_jacob, t=t, eta=cur_eta, delta=delta)
+
             w_sum += next_w
             f.weights = next_w
             if cur_best_w_loss < cur_f:
