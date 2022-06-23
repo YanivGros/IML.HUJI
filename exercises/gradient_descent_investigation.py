@@ -7,7 +7,7 @@ from IMLearn.desent_methods import GradientDescent, FixedLR, ExponentialLR
 from IMLearn.desent_methods.modules import L1, L2
 from IMLearn.learners.classifiers.logistic_regression import LogisticRegression
 from IMLearn.utils import split_train_test
-
+from utils import *
 import plotly.graph_objects as go
 
 
@@ -175,19 +175,20 @@ def fit_logistic_regression():
 
     # Plotting convergence rate of logistic regression over SA heart disease data
     logistic_reg = LogisticRegression().fit(X=X_train, y=y_train)
-    print()
+    c = [custom[0], custom[-1]]
     from sklearn.metrics import roc_curve, auc
-    # fpr, tpr, thresholds = roc_curve(y, y_prob)
+    fpr, tpr, thresholds = roc_curve(y_train, logistic_reg.predict_proba(X_train))
 
-    # go.Figure(
-    #     data=[go.Scatter(x=[0, 1], y=[0, 1], mode="lines", line=dict(color="black", dash='dash'),
-    #                      name="Random Class Assignment"),
-    #           go.Scatter(x=fpr, y=tpr, mode='markers+lines', text=thresholds, name="", showlegend=False, marker_size=5,
-    #                      marker_color=c[1][1],
-    #                      hovertemplate="<b>Threshold:</b>%{text:.3f}<br>FPR: %{x:.3f}<br>TPR: %{y:.3f}")],
-    #     layout=go.Layout(title=rf"$\text{{ROC Curve Of Fitted Model - AUC}}={auc(fpr, tpr):.6f}$",
-    #                      xaxis=dict(title=r"$\text{False Positive Rate (FPR)}$"),
-    #                      yaxis=dict(title=r"$\text{True Positive Rate (TPR)}$")))
+    go.Figure(
+        data=[go.Scatter(x=[0, 1], y=[0, 1], mode="lines", line=dict(color="black", dash='dash'),
+                         name="Random Class Assignment"),
+              go.Scatter(x=fpr, y=tpr, mode='markers+lines', text=thresholds, name="", showlegend=False, marker_size=5,
+                         marker_color=c[1][1],
+                         hovertemplate="<b>Threshold:</b>%{text:.3f}<br>FPR: %{x:.3f}<br>TPR: %{y:.3f}")],
+        layout=go.Layout(title=rf"$\text{{ROC Curve Of Fitted Model - AUC}}={auc(fpr, tpr):.6f}$",
+                         xaxis=dict(title=r"$\text{False Positive Rate (FPR)}$"),
+                         yaxis=dict(title=r"$\text{True Positive Rate (TPR)}$"))).show()
+
 
     # Fitting l1- and l2-regularized logistic regression models, using cross-validation to specify values
     # of regularization parameter

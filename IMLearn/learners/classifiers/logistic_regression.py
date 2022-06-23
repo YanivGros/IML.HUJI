@@ -91,15 +91,13 @@ class LogisticRegression(BaseEstimator):
         if self.include_intercept_:
             X = np.c_[np.ones(X.shape[0]), X]
         weights = np.random.normal(size=X.shape[1])
-        weights_for_regular = np.r_[1, weights] if self.include_intercept_ else weights
         if self.penalty_ == "none":
-            reg_log = LogisticModule(weights_for_regular)
-
+            reg_log = LogisticModule(weights)
         elif self.penalty_ == "l1":
-            reg_log = RegularizedModule(LogisticModule(weights_for_regular), L1(weights), self.lam_, weights,
+            reg_log = RegularizedModule(LogisticModule(), L1(), self.lam_, weights,
                                         self.include_intercept_)
         elif self.penalty_ == "l2":
-            reg_log = RegularizedModule(LogisticModule(weights_for_regular), L2(weights), self.lam_, weights,
+            reg_log = RegularizedModule(LogisticModule(), L2(), self.lam_, weights,
                                         self.include_intercept_)
         else:
             reg_log = None

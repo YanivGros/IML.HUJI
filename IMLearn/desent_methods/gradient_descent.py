@@ -4,6 +4,7 @@ import numpy as np
 
 from IMLearn.base import BaseModule, BaseLR
 from .learning_rate import FixedLR
+
 OUTPUT_VECTOR_TYPE = ["last", "best", "average"]
 
 
@@ -125,7 +126,10 @@ class GradientDescent:
         cur_best_w_loss = f.compute_output(X=X, y=y)
         t = 0
         for t in range(self.max_iter_):
-            cur_eta,  cur_f,cur_jacob = self.learning_rate_.lr_step(t=t), f.compute_output(), f.compute_jacobian(),
+            cur_eta = self.learning_rate_.lr_step(t=t)
+            cur_f = f.compute_output(X=X, y=y)
+
+            cur_jacob = f.compute_jacobian(X=X, y=y)
             next_w = prev_w - cur_jacob * cur_eta
             delta = np.sqrt(np.power(prev_w - next_w, 2).sum())
             if delta < self.tol_:

@@ -156,7 +156,7 @@ class LogisticModule(BaseModule):
             Derivative of function with respect to self.weights at point self.weights
         """
         e_power_mult = np.exp(X @ self.weights)
-        return -(y - e_power_mult / (e_power_mult + 1)) / X.shape[0]
+        return -(y @ X - ((e_power_mult / (e_power_mult + 1)) @ X)) / X.shape[0]
 
 
 class RegularizedModule(BaseModule):
