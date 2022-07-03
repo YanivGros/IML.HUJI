@@ -224,10 +224,4 @@ if __name__ == '__main__':
     compare_fixed_learning_rates()
     compare_exponential_decay_rates()
     fit_logistic_regression()
-# best alpha is 0.32477367537820134
-# model test error is 0.33695652173913043
-# l1 regularization, Best lamda is 0.001 and it's test error is 0.31521739130434784
-# l1 regularization, Best lamda is 0.001 and it's test error is 0.6847826086956522
-# l1 regularization, Best lamda is 0.1 and it's test error is 0.31521739130434784
-# l2 regularization, Best lamda is 0.001 and it's test error is 0.31521739130434784
 

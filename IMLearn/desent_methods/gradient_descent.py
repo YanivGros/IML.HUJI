@@ -134,7 +134,6 @@ class GradientDescent:
             self.callback_(solver=self, weights=f.weights, val=cur_f, grad=cur_jacob, t=t, eta=cur_eta, delta=delta)
             if delta < self.tol_:
                 break
-
             w_sum += next_w
             f.weights = next_w
             if cur_best_w_loss < cur_f:

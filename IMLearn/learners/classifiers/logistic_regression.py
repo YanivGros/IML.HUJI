@@ -68,7 +68,6 @@ class LogisticRegression(BaseEstimator):
 
         if penalty not in ["none", "l1", "l2"]:
             raise ValueError("Supported penalty types are: none, l1, l2")
-
         self.coefs_ = None
 
     def _fit(self, X: np.ndarray, y: np.ndarray) -> NoReturn:
